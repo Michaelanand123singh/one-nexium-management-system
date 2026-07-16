@@ -3,6 +3,7 @@
 set -e
 
 APP_DIR="/opt/onenexium"
+DOMAIN="team.1nexium.com"
 cd "$APP_DIR"
 
 if ! command -v docker >/dev/null 2>&1; then
@@ -23,10 +24,23 @@ if [ -f /tmp/onenexium-image.tar ]; then
 fi
 
 echo "==> Configuring host nginx..."
-sudo cp nginx/onenexium-host.conf /etc/nginx/sites-available/onenexium
+# Use SSL vhost only when certificates already exist; otherwise HTTP so nginx stays healthy.
+if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ] && [ -f "/etc/letsencrypt/live/${DOMAIN}/privkey.pem" ]; then
+  echo "SSL certificates found — installing HTTPS nginx site"
+  sudo cp nginx/onenexium-host.conf /etc/nginx/sites-available/onenexium
+else
+  echo "No SSL certificates yet — installing HTTP nginx site"
+  sudo cp nginx/onenexium-host-http.conf /etc/nginx/sites-available/onenexium
+fi
 sudo ln -sf /etc/nginx/sites-available/onenexium /etc/nginx/sites-enabled/onenexium
 sudo rm -f /etc/nginx/sites-enabled/default
-sudo nginx -t && sudo systemctl reload nginx
+sudo nginx -t
+if systemctl is-active --quiet nginx; then
+  sudo systemctl reload nginx
+else
+  sudo systemctl enable nginx
+  sudo systemctl start nginx
+fi
 
 echo "==> Starting MinIO + app..."
 sudo docker compose -f docker-compose.prod.yml up -d --force-recreate

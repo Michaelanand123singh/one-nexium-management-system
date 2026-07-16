@@ -9,8 +9,9 @@
 
 Production target:
 
-- **VM:** `onenexium-vm-4gb`
-- **Zone:** `us-central1-a`
+- **VM:** `instance-20260606-081151`
+- **Zone:** `us-east1-c`
+- **External IP:** `35.231.35.242`
 - **URL:** https://team.1nexium.com
 
 Manual deploy (local) is still available via `scripts/deploy-gcp-vm.ps1`.
@@ -27,11 +28,11 @@ Manual deploy (local) is still available via `scripts/deploy-gcp-vm.ps1`.
 
 ### 2. Repository variables (Settings → Secrets and variables → Actions → Variables)
 
-| Variable | Example |
-|----------|---------|
+| Variable | Value |
+|----------|--------|
 | `GCP_PROJECT_ID` | `onenexium-ai` |
-| `GCP_ZONE` | `us-central1-a` |
-| `GCP_INSTANCE` | `onenexium-vm-4gb` |
+| `GCP_ZONE` | `us-east1-c` |
+| `GCP_INSTANCE` | `instance-20260606-081151` |
 | `APP_URL` | `https://team.1nexium.com` |
 
 ### 3. GitHub Environment (optional but recommended)
@@ -48,3 +49,4 @@ Create an environment named **`production`** and add required reviewers if you w
 - Never commit `.env` — it is gitignored.
 - The deploy job builds the Docker image on the GitHub runner and uploads it to the VM (same as the PowerShell script).
 - Pushes that only change markdown under `docs/` do not trigger auto-deploy.
+- First-time SSL on a new VM: after DNS points to the VM, run `scripts/enable-https.sh` on the VM (or upload HTTP nginx config first; `vm-deploy.sh` auto-selects HTTP until certs exist).
