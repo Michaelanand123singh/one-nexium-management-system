@@ -1,0 +1,1260 @@
+// Nexium OS - Product Management Software
+// PostgreSQL (Neon)
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ ENUMS ============
+
+enum Role {
+  SUPER_ADMIN
+  PRODUCT_MANAGER
+  ENGINEERING_LEAD
+  DEVELOPER
+  GTM_MANAGER
+  CUSTOMER_SUCCESS
+}
+
+enum Department {
+  PRODUCT
+  ENGINEERING
+  GTM
+  CUSTOMER_SUCCESS
+  LEADERSHIP
+}
+
+enum RoadmapStatus {
+  PLANNED
+  IN_PROGRESS
+  SHIPPED
+  CANCELLED
+}
+
+enum Priority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum BacklogItemType {
+  FEATURE
+  IMPROVEMENT
+  TECH_DEBT
+  RESEARCH
+}
+
+enum BacklogStatus {
+  NEW
+  REFINED
+  GROOMED
+  IN_SPRINT
+  DONE
+  REJECTED
+}
+
+enum BacklogSource {
+  INTERNAL
+  CUSTOMER_FEEDBACK
+  PARTNER_REQUEST
+  COMPETITOR_ANALYSIS
+}
+
+enum TaskType {
+  FEATURE
+  BUG
+  TECH_DEBT
+  RESEARCH
+}
+
+enum TaskStatus {
+  BACKLOG
+  TO_DO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+}
+
+enum BugSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum BugStatus {
+  NEW
+  CONFIRMED
+  IN_PROGRESS
+  FIXED
+  VERIFIED
+  CLOSED
+  WONT_FIX
+}
+
+enum OkrConfidence {
+  ON_TRACK
+  AT_RISK
+  OFF_TRACK
+}
+
+enum CampaignType {
+  CONTENT
+  PARTNERSHIP
+  PAID
+  EVENT
+  COMMUNITY
+  REFERRAL
+}
+
+enum CampaignStatus {
+  PLANNED
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+enum PartnerType {
+  RESELLER
+  REFERRAL
+  AGENCY
+  INFLUENCER
+  INTEGRATION
+  COMMUNITY
+}
+
+enum PartnerTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+enum PartnerPipelineStage {
+  IDENTIFIED
+  CONTACTED
+  IN_DISCUSSION
+  AGREEMENT_SIGNED
+  ACTIVE
+}
+
+enum PartnerStatus {
+  APPLIED
+  ACTIVE
+  PAUSED
+  CHURNED
+}
+
+enum CustomerPlan {
+  FREE
+  PRO
+  BUSINESS
+}
+
+enum ChurnRisk {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum DocumentType {
+  PRODUCT_SPEC
+  TECHNICAL_ARCHITECTURE
+  MEETING_NOTES
+  RUNBOOK
+  GTM_PLAYBOOK
+  BRAND_GUIDELINES
+  ONBOARDING_GUIDE
+}
+
+/** Personal planning board cards (whiteboard-style; separate from Sprint Task workflow) */
+enum PlanningCardStatus {
+  OPEN
+  DONE
+}
+
+// ============ ORG & AUTH ============
+
+model Organisation {
+  id                 String    @id @default(cuid())
+  name               String
+  slug               String    @unique
+  phases             Json      @default("[\"Phase 1\",\"Phase 2\",\"Phase 3\",\"Phase 4\",\"Phase 5\",\"Phase 6\"]")
+  mailProviderConfig  Json?     // { googleClientId?, googleClientSecret?, resendApiKey?, emailFrom?, appUrl? }
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+
+  members              OrganisationMember[]
+  roadmapItems         RoadmapItem[]
+  epics                Epic[]
+  milestones           Milestone[]
+  backlogItems         BacklogItem[]
+  featureRequests      FeatureRequest[]
+  sprints              Sprint[]
+  tasks                Task[]
+  bugs                 Bug[]
+  okrs                 Okr[]
+  campaigns            Campaign[]
+  partners             Partner[]
+  assets               Asset[]
+  events               GtmEvent[]
+  customers            Customer[]
+  feedbackItems        CustomerFeedback[]
+  npsResponses         NpsResponse[]
+  supportTickets       SupportTicket[]
+  documents            Document[]
+  onboardingMilestones OnboardingMilestone[]
+  activityLogs         ActivityLog[]
+  notifications        Notification[]
+  mailAccounts         MailAccount[]
+  mailThreads          MailThread[]
+  mailMessages         MailMessage[]
+  planningBuckets           PlanningBucket[]
+  planningCards             PlanningCard[]
+  planningCardAttachments   PlanningCardAttachment[]
+  employees               Employee[]
+  onboardings             Onboarding[]
+  onboardingDocuments     OnboardingDocument[]
+  workstationDevices           WorkstationDevice[]
+  workstationActivitySamples   WorkstationActivitySample[]
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String?
+  passwordHash String?
+  avatarUrl    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  memberships            OrganisationMember[]
+  sessions               Session[]
+  assignedTasks          Task[]               @relation("TaskAssignee")
+  reportedTasks          Task[]               @relation("TaskReporter")
+  comments               Comment[]
+  activityLogs           ActivityLog[]
+  notifications          Notification[]
+  createdBugs            Bug[]                @relation("BugReporter")
+  assignedBugs           Bug[]                @relation("BugAssignee")
+  okrOwner               Okr[]
+  keyResultOwner         KeyResult[]
+  checkins               OkrCheckin[]
+  campaignOwner          Campaign[]
+  documentEdits          DocumentVersion[]
+  documentComments       DocumentComment[]
+  partnersAssigned       Partner[]
+  customersAssigned      Customer[]
+  supportTicketsAssigned SupportTicket[]
+  roadmapItemHistory     RoadmapItemHistory[]
+  mailAccounts           MailAccount[]
+  planningBuckets        PlanningBucket[]
+  planningCards          PlanningCard[]
+  onboardingsCreated     Onboarding[]           @relation("OnboardingCreatedBy")
+  onboardingsOwned       Onboarding[]           @relation("OnboardingOwner")
+  onboardingDocuments    OnboardingDocument[]
+  workstationDevices     WorkstationDevice[]
+}
+
+// ============ WORKSTATION AGENT (laptop telemetry) ============
+
+model WorkstationDevice {
+  id                 String    @id @default(cuid())
+  organisationId     String
+  userId             String
+  label              String?
+  tokenHash          String
+  hostnameLast       String?
+  agentVersionLast   String?
+  revoked            Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  lastSeenAt         DateTime?
+
+  organisation Organisation              @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user         User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  samples      WorkstationActivitySample[]
+
+  @@index([organisationId])
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+model WorkstationActivitySample {
+  id             String   @id @default(cuid())
+  organisationId String
+  deviceId       String
+  sampledAt      DateTime
+  processName    String
+  windowTitle    String?
+  idle              Boolean  @default(false)
+  inProjectRoots    Boolean  @default(false)
+  keyboardMouseRate Int?
+  appSwitchCount    Int?
+  metadata          Json?
+
+  organisation Organisation      @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  device       WorkstationDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId, sampledAt])
+  @@index([deviceId, sampledAt])
+}
+
+// ============ HR & ONBOARDING ============
+
+model Employee {
+  id             String   @id @default(cuid())
+  organisationId String
+  fullName       String
+  email          String   @unique
+  role           String?  // free-form for now (e.g. \"Frontend Engineer\")
+  status         String   @default("ACTIVE") // ACTIVE | INACTIVE | EXITED
+  department     String?
+  location       String?
+  joinedAt       DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  onboardings  Onboarding[]
+
+  @@index([organisationId])
+}
+
+model Onboarding {
+  id               String   @id @default(cuid())
+  organisationId   String
+  employeeId       String?
+  fullName         String
+  email            String
+  phone            String?
+  joiningDate      DateTime?
+  jobTitle         String?
+  department       String?
+  location         String?
+  status           String   @default("DRAFT") // DRAFT | PENDING_INFO | SUBMITTED | APPROVED | REJECTED | CANCELLED
+  createdByUserId  String
+  ownerUserId      String?
+  publicToken      String?  @unique
+  publicExpiresAt  DateTime?
+  formDataJson     Json?
+  formTemplateJson Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  deletedAt        DateTime?
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employee     Employee?    @relation(fields: [employeeId], references: [id])
+  createdBy    User         @relation("OnboardingCreatedBy", fields: [createdByUserId], references: [id])
+  owner        User?        @relation("OnboardingOwner", fields: [ownerUserId], references: [id])
+  documents    OnboardingDocument[]
+
+  @@index([organisationId])
+  @@index([email])
+  @@index([status])
+}
+
+model OnboardingDocument {
+  id               String   @id @default(cuid())
+  organisationId   String
+  onboardingId     String
+  type             String   // ID_PROOF | OFFER_LETTER | RESUME | OTHER
+  fileUrl          String
+  fileName         String
+  mimeType         String?
+  fileSize         Int?
+  uploadedByUserId String?
+  createdAt        DateTime @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  onboarding   Onboarding   @relation(fields: [onboardingId], references: [id], onDelete: Cascade)
+  uploadedBy   User?        @relation(fields: [uploadedByUserId], references: [id])
+
+  @@index([organisationId])
+  @@index([onboardingId])
+}
+
+model OrganisationMember {
+  id             String      @id @default(cuid())
+  organisationId String
+  userId         String
+  role           Role
+  department     Department?
+  status         String      @default("ACTIVE") // ACTIVE | INACTIVE
+  joinedAt       DateTime    @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organisationId, userId])
+  @@index([organisationId])
+  @@index([userId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+// ============ ROADMAP ============
+
+model Milestone {
+  id             String    @id @default(cuid())
+  organisationId String
+  name           String
+  targetDate     DateTime?
+  description    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organisation Organisation  @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  roadmapItems RoadmapItem[]
+
+  @@index([organisationId])
+}
+
+model Epic {
+  id             String    @id @default(cuid())
+  organisationId String
+  name           String
+  goal           String?
+  ownerId        String?
+  targetPhase  String? // e.g. "Phase 1"
+  status       String    @default("ACTIVE")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  organisation Organisation  @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  roadmapItems RoadmapItem[]
+  backlogItems BacklogItem[]
+  tasks        Task[]
+
+  @@index([organisationId])
+}
+
+model RoadmapItem {
+  id             String        @id @default(cuid())
+  organisationId String
+  title          String
+  description    String?
+  status         RoadmapStatus @default(PLANNED)
+  priority       Priority      @default(MEDIUM)
+  assignedTeam   String? // Product / Engineering / Design
+  targetPhase    String?
+  epicId         String?
+  milestoneId    String?
+  isPublic       Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  deletedAt      DateTime?
+
+  organisation   Organisation         @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  epic           Epic?                @relation(fields: [epicId], references: [id])
+  milestone      Milestone?           @relation(fields: [milestoneId], references: [id])
+  roadmapHistory RoadmapItemHistory[]
+  tasks          Task[]
+
+  @@index([organisationId])
+  @@index([status, targetPhase])
+  @@index([epicId])
+}
+
+model RoadmapItemHistory {
+  id            String   @id @default(cuid())
+  roadmapItemId String
+  field         String
+  oldValue      String?
+  newValue      String?
+  changedById   String?
+  changedAt     DateTime @default(now())
+
+  roadmapItem RoadmapItem @relation(fields: [roadmapItemId], references: [id], onDelete: Cascade)
+  changedBy   User?       @relation(fields: [changedById], references: [id])
+
+  @@index([roadmapItemId])
+}
+
+// ============ BACKLOG & FEATURE REQUESTS ============
+
+model BacklogItem {
+  id             String          @id @default(cuid())
+  organisationId String
+  title          String
+  description    String?
+  type           BacklogItemType @default(FEATURE)
+  source         BacklogSource   @default(INTERNAL)
+  priorityScore  Float? // calculated: business value + demand + effort
+  status         BacklogStatus   @default(NEW)
+  epicId         String?
+  effortEstimate String? // story points or T-shirt
+  sprintId       String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  deletedAt      DateTime?
+
+  organisation   Organisation       @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  epic           Epic?              @relation(fields: [epicId], references: [id])
+  sprint         Sprint?            @relation(fields: [sprintId], references: [id])
+  featureRequest FeatureRequest?
+  linkedFeedback CustomerFeedback[] @relation("BacklogFromFeedback")
+
+  @@index([organisationId])
+  @@index([status, priorityScore])
+  @@index([epicId])
+}
+
+model FeatureRequest {
+  id              String    @id @default(cuid())
+  organisationId  String
+  backlogItemId   String?   @unique
+  title           String
+  description     String?
+  submittedById   String?
+  customerId      String?
+  votes           Int       @default(0)
+  status          String    @default("PENDING") // PENDING | ACCEPTED | REJECTED
+  rejectionReason String?
+  mergedIntoId    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  backlogItem  BacklogItem? @relation(fields: [backlogItemId], references: [id])
+  customer     Customer?    @relation(fields: [customerId], references: [id])
+
+  @@index([organisationId])
+  @@index([status])
+}
+
+// ============ SPRINTS & TASKS ============
+
+model Sprint {
+  id             String    @id @default(cuid())
+  organisationId String
+  name           String
+  goal           String?
+  startDate      DateTime
+  endDate        DateTime
+  status         String    @default("PLANNED") // PLANNED | ACTIVE | COMPLETED
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organisation Organisation  @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  backlogItems BacklogItem[]
+  tasks        Task[]
+
+  @@index([organisationId])
+  @@index([status])
+}
+
+model Task {
+  id             String     @id @default(cuid())
+  organisationId String
+  sprintId       String?
+  epicId         String?
+  roadmapItemId  String?
+  title          String
+  description    String?
+  type           TaskType   @default(FEATURE)
+  status         TaskStatus @default(BACKLOG)
+  priority       Priority   @default(MEDIUM)
+  storyPoints    Int?
+  assigneeId     String?
+  reporterId     String?
+  dueDate        DateTime?
+  isBlocked      Boolean    @default(false)
+  blockedReason  String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  deletedAt      DateTime?
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  sprint       Sprint?      @relation(fields: [sprintId], references: [id])
+  epic         Epic?        @relation(fields: [epicId], references: [id])
+  roadmapItem  RoadmapItem? @relation(fields: [roadmapItemId], references: [id])
+  assignee     User?        @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  reporter     User?        @relation("TaskReporter", fields: [reporterId], references: [id])
+  subtasks     Subtask[]
+  comments     Comment[]
+  taskHours    TaskHour[]
+  linkedBugs   Bug[]        @relation("TaskLinkedBugs")
+  planningCards PlanningCard[]
+
+  @@index([organisationId])
+  @@index([sprintId, status])
+  @@index([assigneeId])
+  @@index([status])
+}
+
+model Subtask {
+  id        String    @id @default(cuid())
+  taskId    String
+  title     String
+  completed Boolean   @default(false)
+  order     Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+model TaskHour {
+  id        String   @id @default(cuid())
+  taskId    String
+  userId    String
+  hours     Float
+  date      DateTime
+  note      String?
+  createdAt DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([userId])
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  taskId    String?
+  bugId     String?
+  userId    String
+  body      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  task Task? @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  bug  Bug?  @relation(fields: [bugId], references: [id], onDelete: Cascade)
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([bugId])
+}
+
+// ============ BUGS ============
+
+model Bug {
+  id                String      @id @default(cuid())
+  organisationId    String
+  taskId            String? // when linked to sprint task
+  title             String
+  description       String?
+  stepsToReproduce  String?
+  expectedBehaviour String?
+  actualBehaviour   String?
+  severity          BugSeverity @default(MEDIUM)
+  platform          String?
+  browserDevice     String?
+  reportedById      String?
+  assignedToId      String?
+  sprintId          String?
+  status            BugStatus   @default(NEW)
+  resolutionNotes   String?
+  closedAt          DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  deletedAt         DateTime?
+  customerId        String?
+
+  organisation Organisation    @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  task         Task?           @relation("TaskLinkedBugs", fields: [taskId], references: [id])
+  reporter     User?           @relation("BugReporter", fields: [reportedById], references: [id])
+  assignee     User?           @relation("BugAssignee", fields: [assignedToId], references: [id])
+  customer     Customer?       @relation(fields: [customerId], references: [id])
+  attachments  BugAttachment[]
+  comments     Comment[]
+
+  @@index([organisationId])
+  @@index([status, severity])
+  @@index([assignedToId])
+}
+
+model BugAttachment {
+  id         String   @id @default(cuid())
+  bugId      String
+  url        String
+  type       String // image | video | file
+  documentId String? // optional link to Document library
+  createdAt  DateTime @default(now())
+
+  bug Bug @relation(fields: [bugId], references: [id], onDelete: Cascade)
+
+  @@index([bugId])
+  @@index([documentId])
+}
+
+// ============ OKR ============
+
+model Okr {
+  id             String    @id @default(cuid())
+  organisationId String
+  ownerId        String
+  parentOkrId    String? // for team/individual OKRs
+  objective      String
+  period         String // Q1 2025, etc.
+  level          String // COMPANY | TEAM | INDIVIDUAL
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  owner        User         @relation(fields: [ownerId], references: [id])
+  parentOkr    Okr?         @relation("OkrHierarchy", fields: [parentOkrId], references: [id])
+  childOkrs    Okr[]        @relation("OkrHierarchy")
+  keyResults   KeyResult[]
+  checkins     OkrCheckin[]
+
+  @@index([organisationId])
+  @@index([ownerId])
+  @@index([period])
+}
+
+model KeyResult {
+  id           String        @id @default(cuid())
+  okrId        String
+  metricName   String
+  currentValue Float         @default(0)
+  targetValue  Float
+  unit         String?
+  progress     Float         @default(0)
+  confidence   OkrConfidence @default(ON_TRACK)
+  updatedAt    DateTime      @updatedAt
+
+  okr     Okr     @relation(fields: [okrId], references: [id], onDelete: Cascade)
+  owner   User?   @relation(fields: [ownerId], references: [id])
+  ownerId String?
+
+  @@index([okrId])
+}
+
+model OkrCheckin {
+  id          String   @id @default(cuid())
+  okrId       String
+  keyResultId String?
+  userId      String
+  note        String?
+  values      Json? // snapshot of key result values
+  createdAt   DateTime @default(now())
+
+  okr  Okr  @relation(fields: [okrId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([okrId])
+  @@index([userId])
+}
+
+// ============ GTM ============
+
+model Campaign {
+  id             String         @id @default(cuid())
+  organisationId String
+  name           String
+  type           CampaignType
+  status         CampaignStatus @default(PLANNED)
+  ownerId        String?
+  startDate      DateTime?
+  endDate        DateTime?
+  budget         Float?
+  targetMetric   String?
+  actualResult   String?
+  description    String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  deletedAt      DateTime?
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  owner        User?        @relation(fields: [ownerId], references: [id])
+
+  @@index([organisationId])
+  @@index([status])
+}
+
+model Partner {
+  id             String               @id @default(cuid())
+  organisationId String
+  companyName    String
+  contactPerson  String?
+  type           PartnerType
+  tier           PartnerTier          @default(BRONZE)
+  region         String?
+  niche          String?
+  audienceSize   String?
+  status         PartnerStatus        @default(APPLIED)
+  pipelineStage  PartnerPipelineStage @default(IDENTIFIED)
+  assignedToId   String?
+  referralCode   String?              @unique
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  deletedAt      DateTime?
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  assignedTo   User?        @relation(fields: [assignedToId], references: [id])
+  referrals    Referral[]
+  commissions  Commission[]
+}
+
+model Referral {
+  id                String   @id @default(cuid())
+  partnerId         String
+  linkClicks        Int      @default(0)
+  signups           Int      @default(0)
+  conversions       Int      @default(0)
+  revenueAttributed Float    @default(0)
+  period            String // month key
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  partner Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@index([partnerId])
+}
+
+model Commission {
+  id        String    @id @default(cuid())
+  partnerId String
+  amount    Float
+  status    String // EARNED | PAID | PENDING
+  period    String
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  partner Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@index([partnerId])
+}
+
+model Asset {
+  id             String    @id @default(cuid())
+  organisationId String
+  name           String
+  type           String? // pitch_deck | one_pager | video | etc.
+  url            String
+  folder         String?
+  audience       String? // internal | partner | public
+  version        Int       @default(1)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+}
+
+model GtmEvent {
+  id             String    @id @default(cuid())
+  organisationId String
+  name           String
+  type           String? // conference | webinar | meetup
+  date           DateTime?
+  location       String?
+  goals          String?
+  attendees      String?
+  outcomeNotes   String?
+  followUpTasks  String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+}
+
+// ============ PLANNING (personal board + calendar) ============
+
+model PlanningBucket {
+  id             String    @id @default(cuid())
+  organisationId String
+  userId         String
+  name           String
+  sortOrder      Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organisation Organisation   @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cards        PlanningCard[]
+
+  @@index([organisationId, userId])
+}
+
+model PlanningCard {
+  id             String             @id @default(cuid())
+  organisationId String
+  userId         String
+  bucketId       String
+  title          String
+  /// Plain-text excerpt for lists / search (derived from notesJson on save)
+  description    String?
+  /// TipTap JSON document for rich notes
+  notesJson      Json?
+  /// Calendar day (time component ignored in API; stored as UTC midnight of chosen date)
+  plannedDate    DateTime?
+  status         PlanningCardStatus @default(OPEN)
+  taskId         String?
+  sortOrder      Int                @default(0)
+  completedAt    DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  deletedAt      DateTime?
+
+  organisation Organisation    @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bucket       PlanningBucket  @relation(fields: [bucketId], references: [id], onDelete: Cascade)
+  task         Task?           @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  attachments  PlanningCardAttachment[]
+
+  @@index([organisationId, userId])
+  @@index([bucketId])
+  @@index([plannedDate])
+  @@index([userId, status])
+}
+
+model PlanningCardAttachment {
+  id             String   @id @default(cuid())
+  planningCardId String
+  organisationId String
+  url            String
+  fileName       String
+  mimeType       String?
+  fileSize       Int?
+  createdAt      DateTime @default(now())
+
+  planningCard PlanningCard @relation(fields: [planningCardId], references: [id], onDelete: Cascade)
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@index([planningCardId])
+  @@index([organisationId])
+}
+
+// ============ CUSTOMER SUCCESS ============
+
+model Customer {
+  id               String       @id @default(cuid())
+  organisationId   String
+  name             String
+  email            String
+  plan             CustomerPlan @default(FREE)
+  signupDate       DateTime     @default(now())
+  sitesBuiltCount  Int          @default(0)
+  lastActiveAt     DateTime?
+  onboardingStatus String? // milestone key
+  npsScore         Int?
+  churnRisk        ChurnRisk    @default(LOW)
+  assignedCsmId    String?
+  notes            String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  deletedAt        DateTime?
+
+  organisation       Organisation                 @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  assignedCsm        User?                        @relation(fields: [assignedCsmId], references: [id])
+  featureRequests    FeatureRequest[]
+  feedback           CustomerFeedback[]
+  npsResponses       NpsResponse[]
+  supportTickets     SupportTicket[]
+  bugs               Bug[]
+  onboardingProgress CustomerOnboardingProgress[]
+
+  @@index([organisationId])
+  @@index([churnRisk])
+  @@index([plan])
+}
+
+model CustomerFeedback {
+  id             String    @id @default(cuid())
+  organisationId String
+  customerId     String?
+  type           String? // POSITIVE | NEGATIVE | FEATURE_REQUEST | BUG_REPORT
+  theme          String? // AI quality, Speed, etc.
+  content        String
+  backlogItemId  String? // when promoted to backlog
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  customer     Customer?    @relation(fields: [customerId], references: [id])
+  backlogItem  BacklogItem? @relation("BacklogFromFeedback", fields: [backlogItemId], references: [id])
+
+  @@index([organisationId])
+  @@index([customerId])
+}
+
+model NpsResponse {
+  id             String   @id @default(cuid())
+  organisationId String
+  customerId     String?
+  score          Int
+  feedback       String?
+  createdAt      DateTime @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  customer     Customer?    @relation(fields: [customerId], references: [id])
+
+  @@index([organisationId])
+  @@index([customerId])
+}
+
+model SupportTicket {
+  id             String       @id @default(cuid())
+  organisationId String
+  customerId     String
+  title          String
+  description    String?
+  severity       String?
+  status         TicketStatus @default(OPEN)
+  assignedCsmId  String?
+  bugId          String?
+  resolvedAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  customer     Customer     @relation(fields: [customerId], references: [id])
+  assignedCsm  User?        @relation(fields: [assignedCsmId], references: [id])
+
+  @@index([organisationId])
+  @@index([customerId])
+  @@index([status])
+}
+
+model OnboardingMilestone {
+  id             String   @id @default(cuid())
+  organisationId String
+  key            String // Signed Up | First Project | etc.
+  order          Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  organisation Organisation                 @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  completions  CustomerOnboardingProgress[]
+
+  @@index([organisationId])
+}
+
+model CustomerOnboardingProgress {
+  id          String   @id @default(cuid())
+  customerId  String
+  milestoneId String
+  completedAt DateTime @default(now())
+
+  customer  Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  milestone OnboardingMilestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, milestoneId])
+  @@index([customerId])
+}
+
+// ============ MAIL / INBOX ============
+
+model MailAccount {
+  id             String   @id @default(cuid())
+  organisationId String
+  userId         String
+  provider       String?  // gmail | outlook | imap | resend_only | etc.
+  email          String
+  displayName    String?
+  config         Json?    // provider-specific tokens / settings
+  isPrimary      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  threads      MailThread[]
+  messages     MailMessage[]
+
+  @@index([organisationId])
+  @@index([userId])
+  @@unique([organisationId, email])
+}
+
+model MailThread {
+  id             String   @id @default(cuid())
+  organisationId String
+  mailAccountId  String
+  subject        String?
+  snippet        String?
+  lastMessageAt  DateTime @default(now())
+  unreadCount    Int      @default(0)
+  folder         String?  // INBOX | SENT | ARCHIVE | TRASH | etc.
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  mailAccount  MailAccount @relation(fields: [mailAccountId], references: [id], onDelete: Cascade)
+  messages     MailMessage[]
+
+  @@index([organisationId])
+  @@index([mailAccountId])
+  @@index([folder, lastMessageAt])
+}
+
+model MailMessage {
+  id               String   @id @default(cuid())
+  organisationId   String
+  mailAccountId    String
+  threadId         String
+  providerMessageId String? // external message id, if available
+  from             String
+  to               String
+  cc               String?
+  bcc              String?
+  subject          String?
+  bodyText         String?
+  bodyHtml         String?
+  direction        String   // INBOUND | OUTBOUND
+  folder           String?  // INBOX | SENT | DRAFTS | etc. (duplicated for quick filtering)
+  isRead           Boolean  @default(false)
+  sentAt           DateTime?
+  receivedAt       DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  mailAccount  MailAccount @relation(fields: [mailAccountId], references: [id], onDelete: Cascade)
+  thread       MailThread  @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+  @@index([mailAccountId])
+  @@index([threadId])
+  @@index([folder, createdAt])
+}
+
+// ============ DOCUMENTS ============
+
+model Document {
+  id             String        @id @default(cuid())
+  organisationId String
+  title          String
+  content        String? // rich text JSON
+  type           DocumentType?
+  folderId       String?
+  parentId       String? // for folder tree
+  isFolder       Boolean       @default(false)
+  roleAccess     String? // comma-separated roles that can view
+  // File (when used as library file)
+  fileUrl        String?
+  fileName       String?
+  mimeType       String?
+  fileSize       Int?
+  sourceType     String? // library | bug | task | gtm | backlog
+  sourceId       String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  deletedAt      DateTime?
+
+  organisation Organisation      @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  versions     DocumentVersion[]
+  comments     DocumentComment[]
+
+  @@index([organisationId])
+  @@index([folderId])
+  @@index([sourceType, sourceId])
+}
+
+model DocumentVersion {
+  id          String   @id @default(cuid())
+  documentId  String
+  content     String
+  version     Int
+  createdById String
+  createdAt   DateTime @default(now())
+
+  document  Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  createdBy User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+}
+
+model DocumentComment {
+  id         String    @id @default(cuid())
+  documentId String
+  userId     String
+  content    String
+  sectionRef String? // line or section reference
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+}
+
+// ============ ACTIVITY & NOTIFICATIONS ============
+
+model ActivityLog {
+  id             String   @id @default(cuid())
+  organisationId String
+  userId         String
+  action         String // created | updated | deleted
+  entityType     String // task | bug | roadmap_item | etc.
+  entityId       String
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id             String   @id @default(cuid())
+  organisationId String
+  userId         String
+  type           String
+  title          String
+  body           String?
+  link           String?
+  read           Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+  @@index([userId])
+  @@index([read])
+}

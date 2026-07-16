@@ -1,0 +1,1068 @@
+{
+  "project": {
+    "name": "OneNexium",
+    "phase": "1.1",
+    "title": "Phase 1.1 — Task & Goals Document",
+    "subtitle": "Build the complete working platform engine. Quality comes in 1.2.",
+    "version": "1.0",
+    "confidentiality": "Confidential",
+    "summary": {
+      "sprints": 6,
+      "duration_weeks": 12,
+      "total_goals": 14,
+      "philosophy": "Engine First",
+      "quality_phase": "1.2"
+    }
+  },
+
+  "phase_definition": {
+    "what_is_phase_1_1": "Build a complete, working platform where every layer — auth, chat, AI generation, build pipeline, deployment, domains, backend gen — is connected and functional.",
+    "standard": "It works. Not: it works beautifully. Not: it works fast. Not: it generates perfect code. It works. End-to-end. Reliably. For a real user session.",
+    "what_is_not_1_1": [
+      "Generated website quality",
+      "Performance optimisation",
+      "Scaling",
+      "Beautiful AI output",
+      "LLM cost optimisation",
+      "Advanced monitoring"
+    ],
+    "completion_statement": "Phase 1.1 is complete when every engine is built and connected. A real user can go from signup to live web app. The web app may not be beautiful. The platform may not be fast. But it works."
+  },
+
+  "the_one_test": {
+    "description": "A non-technical user who has never seen the platform before sits down with no help and completes the full journey independently.",
+    "steps": [
+      {
+        "step": 1,
+        "action": "They open onenexium.com and sign up with Google."
+      },
+      {
+        "step": 2,
+        "action": "They complete the onboarding flow — business type, name, brand."
+      },
+      {
+        "step": 3,
+        "action": "They type: \"Build me a complete website for my coaching business called Rise With Sarah\"."
+      },
+      {
+        "step": 4,
+        "action": "They watch the generation happen in the chat. They see status updates."
+      },
+      {
+        "step": 5,
+        "action": "A 4-page website appears in the preview iframe."
+      },
+      {
+        "step": 6,
+        "action": "They type: \"Add a contact form so clients can reach me\"."
+      },
+      {
+        "step": 7,
+        "action": "The contact form is added. A database table is created. API route generated."
+      },
+      {
+        "step": 8,
+        "action": "They click Go Live. The site deploys. A URL appears."
+      },
+      {
+        "step": 9,
+        "action": "They open the URL in a browser. The site loads. The contact form works."
+      },
+      {
+        "step": 10,
+        "action": "They go to Domains. They enter their own domain. DNS instructions appear."
+      },
+      {
+        "step": 11,
+        "action": "They add the DNS record. The platform verifies it. SSL activates."
+      },
+      {
+        "step": 12,
+        "action": "They invite a team member. That person signs in and sees the project."
+      }
+    ],
+    "pass_condition": "If all 12 steps work without developer intervention, Phase 1.1 is complete.",
+    "note": "The quality of the generated site is irrelevant to this test."
+  },
+
+  "phase_boundary": {
+    "phase_1_1_build_it_working": [
+      "Authentication works",
+      "Onboarding flow completes",
+      "Chat interface sends messages",
+      "Claude API is called correctly",
+      "MCP tools execute on real infrastructure",
+      "Files are written to disk",
+      "Build pipeline runs and reports errors",
+      "Self-healing retry loop executes",
+      "Docker image is built and pushed to ECR",
+      "Container starts on Runtime EC2",
+      "Traefik routes the subdomain",
+      "SSL certificate is issued",
+      "Multi-page generation works",
+      "Backend code generation runs",
+      "Drizzle schema and API routes generated",
+      "Custom domain connects",
+      "RBAC restricts views by role",
+      "Team invites work",
+      "Visual overlay editor works",
+      "Project persistence works"
+    ],
+    "phase_1_2_make_it_good": [
+      "Generated website looks beautiful",
+      "AI output quality is consistently high",
+      "Build success rate > 95%",
+      "Generation time under 90 seconds",
+      "LLM cost optimisation (caching, routing)",
+      "Performance: platform loads in < 1s",
+      "Advanced monitoring and alerting",
+      "Coaching vertical templates (10+)",
+      "SEO auto-configuration",
+      "Stripe billing on the platform",
+      "Advanced analytics dashboard",
+      "WebSocket real-time (replace polling)",
+      "PgBouncer connection pooling",
+      "CloudFront CDN for user uploads",
+      "Langfuse full observability",
+      "Automated testing suite",
+      "System prompt v3+ (quality trained)",
+      "Error recovery UX polish",
+      "Mobile app performance",
+      "Multi-region deployment"
+    ]
+  },
+
+  "goals": [
+    {
+      "id": "goal_01",
+      "number": 1,
+      "title": "AWS Infrastructure — Fully Operational",
+      "description": "Every AWS service is running, connected, and verified. The foundation every other goal builds on.",
+      "tasks": [
+        "VPC, subnets, security groups, route tables, NAT gateway — all created and verified",
+        "Platform EC2 (t3.large) running with all software installed: Node.js 20, Python 3.12, Docker, PM2, Caddy",
+        "Runtime EC2 (t3.xlarge) running with Docker Engine, Traefik, and onenexium-runtime Docker network",
+        "RDS PostgreSQL 16 running, accessible from Platform EC2, platform schema tables created",
+        "ElastiCache Redis 7.1 running, accessible from Platform EC2, ping returns PONG",
+        "S3 bucket created with correct folder structure and encryption",
+        "ECR repository created, Platform EC2 can push and pull images",
+        "ECS Fargate cluster created, task definition registered for build worker",
+        "ALB created, HTTPS listener active, ACM certificate issued and validated",
+        "All IAM roles created with correct permissions for each service",
+        "All secrets stored in Secrets Manager — no credentials in code or env files",
+        "CloudWatch alarms active for CPU, memory, storage thresholds"
+      ],
+      "acceptance_criteria": [
+        "SSH to Platform EC2 works. SSH to Runtime EC2 works.",
+        "psql connects to RDS from Platform EC2. SELECT 1 returns 1.",
+        "redis-cli -h $REDIS_ENDPOINT ping returns PONG.",
+        "aws s3 ls s3://onenexium-storage returns folder listing.",
+        "docker push to ECR succeeds from Platform EC2.",
+        "https://onenexium.com loads (even if 503 — SSL must be valid).",
+        "https://test.sites.onenexium.com loads with valid SSL via Traefik."
+      ]
+    },
+    {
+      "id": "goal_02",
+      "number": 2,
+      "title": "Cloudflare + External Services — Fully Connected",
+      "description": "All services outside AWS are configured, verified, and storing their credentials correctly.",
+      "tasks": [
+        "Cloudflare account created, domain added, nameservers pointing to Cloudflare",
+        "All DNS records created: onenexium.com → ALB, mcp.onenexium.com → Platform EC2, *.sites.onenexium.com → Runtime EC2",
+        "Cloudflare security settings configured: HTTPS always, TLS 1.3, HSTS, Full Strict SSL",
+        "Resend account created, domain verified, test email sends and receives",
+        "Anthropic API key active with spending limits set ($200 soft, $400 hard)",
+        "Google OAuth consent screen configured, OAuth credentials created",
+        "GitHub organisation created, 3 repositories created with CI/CD workflows",
+        "All external credentials stored in AWS Secrets Manager",
+        ".env.local generated for local development"
+      ],
+      "acceptance_criteria": [
+        "dig onenexium.com returns Cloudflare proxy IPs.",
+        "dig mcp.onenexium.com returns Platform EC2 static IP.",
+        "dig hello.sites.onenexium.com returns Runtime EC2 static IP.",
+        "Test email sent via Resend API is received in inbox.",
+        "Anthropic API test call returns a valid response.",
+        "Google OAuth client ID and secret are stored in Secrets Manager.",
+        "GitHub Actions CI/CD deploys on push to main for platform and MCP repos."
+      ]
+    },
+    {
+      "id": "goal_03",
+      "number": 3,
+      "title": "Platform — Next.js App Running on EC2",
+      "description": "The Next.js platform application is deployed to Platform EC2, running under PM2, and accessible at onenexium.com.",
+      "tasks": [
+        "Next.js 14 App Router project created with TypeScript, Tailwind CSS, shadcn/ui",
+        "Drizzle ORM configured with PostgreSQL — all platform schema tables created and migrated",
+        "PM2 process manager running Next.js — auto-restarts on crash, starts on EC2 reboot",
+        "GitHub Actions deploys on push to main branch — zero manual deployment steps",
+        "Health check endpoint /api/health returns { status: ok, db: connected, redis: connected }",
+        "ALB health check passes — Platform EC2 is healthy in target group",
+        "Basic dashboard page renders at /app (even if empty — it must load)",
+        "Environment variables loaded from AWS Secrets Manager at startup",
+        "404 and error pages exist — platform never shows raw Next.js error page"
+      ],
+      "acceptance_criteria": [
+        "https://onenexium.com loads and shows a real page (not default Next.js template).",
+        "https://onenexium.com/api/health returns { status: ok, db: connected, redis: connected }.",
+        "Push to main GitHub branch triggers deploy. Deploy completes without manual steps.",
+        "pm2 list on Platform EC2 shows onenexium-platform as online.",
+        "Kill PM2 process. PM2 automatically restarts it within 5 seconds.",
+        "Reboot Platform EC2. Platform comes back up automatically."
+      ]
+    },
+    {
+      "id": "goal_04",
+      "number": 4,
+      "title": "Authentication — NextAuth Working End to End",
+      "description": "Users can sign up and sign in with Google and email magic link. Sessions persist. Protected routes redirect correctly.",
+      "tasks": [
+        "NextAuth v5 (Auth.js) configured with Google OAuth provider",
+        "Email magic link provider configured via Resend",
+        "Drizzle adapter configured — users, accounts, sessions, verification_tokens tables populated on login",
+        "JWT sessions — role (admin/member/viewer) stored in token and exposed in session object",
+        "Middleware protecting /app/* routes — unauthenticated access redirects to /login",
+        "Login page at /login — clean UI with Google button and email input",
+        "Sign out flow — clears session, redirects to landing page",
+        "Session persists across browser tab close and reopen",
+        "Role-based access guard utilities (requireRole, useRole) implemented in lib/auth/rbac.ts"
+      ],
+      "acceptance_criteria": [
+        "Visiting /app without being logged in redirects to /login.",
+        "Clicking Google sign in completes OAuth and lands on /app.",
+        "A user row is created in RDS users table after first Google login.",
+        "After sign in, session.user.role is accessible in both server and client components.",
+        "Sending magic link email receives it in inbox. Clicking link signs in.",
+        "Signing out redirects to / and /app access redirects back to /login."
+      ]
+    },
+    {
+      "id": "goal_05",
+      "number": 5,
+      "title": "Onboarding Flow — Working 4-Step Wizard",
+      "description": "New users complete a 4-step onboarding that creates their workspace and pre-fills their first AI generation prompt.",
+      "tasks": [
+        "First-login detection — if user.onboarded is false, redirect to /onboarding after sign in",
+        "Step 1: Business type selection (Coaching / Consulting / Agency / Freelance / Other)",
+        "Step 2: Business name and description input",
+        "Step 3: Brand colour picker and logo upload (stored in S3)",
+        "Step 4: First project prompt setup — pre-fills chat with business description",
+        "Workspace record created in RDS on onboarding completion",
+        "User.onboarded set to true — never shown onboarding again",
+        "Progress indicator showing current step (1/4, 2/4, 3/4, 4/4)",
+        "Back button works on all steps — does not lose data",
+        "Onboarding state persists across refresh — user continues from last completed step"
+      ],
+      "onboarding_steps": [
+        {
+          "step": 1,
+          "title": "Business Type Selection",
+          "options": ["Coaching", "Consulting", "Agency", "Freelance", "Other"]
+        },
+        {
+          "step": 2,
+          "title": "Business Name and Description",
+          "fields": ["business_name", "business_description"]
+        },
+        {
+          "step": 3,
+          "title": "Brand Assets",
+          "fields": ["brand_colour", "logo_upload"],
+          "storage": "S3"
+        },
+        {
+          "step": 4,
+          "title": "First Project Prompt Setup",
+          "action": "Pre-fills chat with business description"
+        }
+      ],
+      "acceptance_criteria": [
+        "New user after Google login lands on /onboarding.",
+        "Completing all 4 steps creates a workspace row in RDS.",
+        "Returning user who completed onboarding goes directly to /app — not /onboarding.",
+        "Logo uploaded in Step 3 is stored in S3 and URL saved in workspace record.",
+        "After Step 4, user lands in /app with chat pre-filled with their business description."
+      ]
+    },
+    {
+      "id": "goal_06",
+      "number": 6,
+      "title": "Chat Interface — Message, Stream, and Display",
+      "description": "The chat interface sends messages to Claude, streams responses in real time, shows tool status updates, and displays the live URL when deployment completes.",
+      "tasks": [
+        "Chat UI at /app/projects/[id] — left panel chat, right panel preview iframe",
+        "Text input at bottom — multi-line textarea, sends on Enter (Shift+Enter = new line)",
+        "Messages displayed: user messages right (indigo), AI messages left (surface card)",
+        "Streaming response — text appears character by character as Claude generates",
+        "Tool use status chips — show real-time operation labels as Claude calls MCP tools",
+        "Live URL card appears in chat after register_traefik_route returns success",
+        "Preview iframe auto-refreshes when deployment completes",
+        "Error display — if all retries fail, shows friendly message not raw error",
+        "Conversation history persists in RDS — reload page shows full history",
+        "Loading state — spinner shown while Claude API call is in flight",
+        "Mobile responsive — chat and preview stack vertically on small screens"
+      ],
+      "acceptance_criteria": [
+        "Typing a message and pressing Enter sends it. Streaming response appears within 2 seconds.",
+        "During generation, status chips appear: \"Writing homepage...\", \"Building...\", \"Deploying...\"",
+        "After full deploy, a clickable URL card appears in the chat.",
+        "Refreshing the page shows the full conversation history.",
+        "On mobile (375px width), the layout does not break."
+      ]
+    },
+    {
+      "id": "goal_07",
+      "number": 7,
+      "title": "MCP Server — All 5 Namespaces Operational",
+      "description": "All 5 MCP server namespaces are deployed on Platform EC2, accessible via HTTPS, and every tool executes correctly.",
+      "tasks": [
+        "FastMCP + FastAPI application deployed on Platform EC2 port 8000",
+        "Caddy reverse proxy serving HTTPS at mcp.onenexium.com → localhost:8000",
+        "JWT auth middleware validates Authorization Bearer token on every request",
+        "PM2 running uvicorn — auto-restart on crash, starts on EC2 reboot",
+        "GitHub Actions deploys MCP server on push to onenexium-mcp main branch",
+        "Structured logging to stdout captured by CloudWatch"
+      ],
+      "namespaces": [
+        {
+          "namespace": "/workspace",
+          "tools": [
+            "get_project_context",
+            "get_conversation_history",
+            "create_project",
+            "save_project_state"
+          ]
+        },
+        {
+          "namespace": "/codegen",
+          "tools": [
+            "write_file",
+            "read_file",
+            "list_files",
+            "apply_diff"
+          ]
+        },
+        {
+          "namespace": "/build",
+          "tools": [
+            "trigger_build",
+            "get_build_status",
+            "get_build_errors",
+            "get_preview_url"
+          ]
+        },
+        {
+          "namespace": "/infra",
+          "tools": [
+            "provision_tenant_schema",
+            "create_s3_folder",
+            "store_secret",
+            "get_secret"
+          ]
+        },
+        {
+          "namespace": "/deploy",
+          "tools": [
+            "build_docker_image",
+            "start_container",
+            "register_traefik_route",
+            "register_custom_domain"
+          ]
+        }
+      ],
+      "acceptance_criteria": [
+        "curl https://mcp.onenexium.com/health returns 200 with valid SSL.",
+        "curl to /codegen/write_file with valid auth token writes a real file to disk.",
+        "curl to /build/trigger_build launches a real ECS Fargate task.",
+        "curl to /deploy/start_container starts a real Docker container on Runtime EC2.",
+        "Invalid auth token returns 401 Unauthorized.",
+        "pm2 list shows onenexium-mcp as online."
+      ]
+    },
+    {
+      "id": "goal_08",
+      "number": 8,
+      "title": "AI Generation Pipeline — Claude Generates Real Files",
+      "description": "Claude API is called correctly with all 5 MCP server URLs, Claude calls tools, tools write real files, and the generated code is valid Next.js that compiles.",
+      "tasks": [
+        "Context assembly function — loads workspace, project state, file tree, last 10 messages",
+        "System prompt v1 — instructs Claude on Next.js 14 App Router, TypeScript, Tailwind, file writing order",
+        "Claude API call from /api/ai/generate — passes assembled context + conversation + 5 MCP server URLs",
+        "Streaming SSE response pipeline — Claude events piped to browser in real time",
+        "Tool use event parsing — write_file calls show \"Writing filename...\" chips in UI",
+        "Multi-page generation — Claude writes: layout.tsx, page.tsx, about/page.tsx, services/page.tsx, contact/page.tsx, Navbar.tsx, Footer.tsx",
+        "Generated code is valid TypeScript — tsc --noEmit passes without errors",
+        "Generated code uses Tailwind CSS utility classes — no inline styles, no custom CSS",
+        "Generated code uses shadcn/ui components — no raw HTML buttons or forms",
+        "Generated code is mobile responsive — uses Tailwind responsive prefixes"
+      ],
+      "generated_files": [
+        "layout.tsx",
+        "page.tsx",
+        "about/page.tsx",
+        "services/page.tsx",
+        "contact/page.tsx",
+        "Navbar.tsx",
+        "Footer.tsx"
+      ],
+      "acceptance_criteria": [
+        "Sending \"Build me a website for a coaching business called Rise With Sarah\" results in Claude calling write_file for at least 5 files.",
+        "All generated files are present at /data/projects/{id}/ on Platform EC2.",
+        "npm run build on the generated project exits with code 0 (no TypeScript errors).",
+        "80% of test prompts result in compilable code without retries."
+      ]
+    },
+    {
+      "id": "goal_09",
+      "number": 9,
+      "title": "Build Pipeline — ECS Fargate Build Worker Operating",
+      "description": "Every build request launches an ECS Fargate task, builds the Next.js project, and reports success or structured errors back to the platform.",
+      "tasks": [
+        "Build worker Docker image created and pushed to ECR",
+        "ECS Fargate task definition registered with correct IAM roles, memory, CPU",
+        "trigger_build MCP tool: creates build_job in RDS, syncs project files to S3, launches Fargate task",
+        "Build worker: downloads files from S3, overlays on base template, runs npm install + npm run build",
+        "Build worker: on success, runs docker build + docker push to ECR, updates RDS job status",
+        "Build worker: on failure, parses TypeScript errors into structured JSON, stores in S3, updates RDS",
+        "get_build_status MCP tool: polls RDS for job status, returns to Claude",
+        "get_build_errors MCP tool: returns structured errors with file path, line, message",
+        "Self-healing loop: Claude receives errors, calls write_file to fix, retriggers build — up to 3 attempts",
+        "Build logs stored in CloudWatch under /ecs/onenexium-build-worker",
+        "Fargate task terminates after completion — zero cost when idle"
+      ],
+      "build_job_states": ["queued", "building", "complete", "failed"],
+      "self_healing_max_retries": 3,
+      "acceptance_criteria": [
+        "trigger_build with a valid project launches a Fargate task visible in ECS console.",
+        "Fargate task completes and image appears in ECR repository.",
+        "Intentionally broken TypeScript file returns structured errors from get_build_errors.",
+        "Self-healing loop fixes a broken file and achieves a passing build on retry.",
+        "Build job status in RDS transitions: queued → building → complete.",
+        "Total build time from trigger to ECR push is under 5 minutes."
+      ]
+    },
+    {
+      "id": "goal_10",
+      "number": 10,
+      "title": "Deployment Pipeline — Containers Live on Runtime EC2",
+      "description": "After a successful build, the Docker image is pulled on Runtime EC2, a container is started, Traefik routes the subdomain, and the site is live with SSL.",
+      "tasks": [
+        "build_docker_image MCP tool: image already in ECR from build worker — records image URI in RDS",
+        "start_container MCP tool: SSH to Runtime EC2 via paramiko, docker pull from ECR, docker run with Traefik labels",
+        "Port assignment: sequential ports starting at 3001, stored in RDS, no conflicts",
+        "Traefik Docker labels: correct host rule, TLS enabled, letsencrypt cert resolver, service port",
+        "register_traefik_route MCP tool: polls the subdomain URL every 5 seconds for up to 90 seconds",
+        "Let's Encrypt certificate issued automatically by Traefik within 60 seconds",
+        "Platform EC2 updates RDS project.production_url after successful registration",
+        "Rolling deploy: new container started alongside old one, smoke test passes, old container stopped",
+        "Rollback: if smoke test fails, new container stopped, old container kept, user notified",
+        "Container health check: Traefik pings /api/health every 30 seconds",
+        "Container cleanup: old container stopped and removed on every successful rolling deploy"
+      ],
+      "acceptance_criteria": [
+        "After build completes, start_container results in docker ps showing user-app-{tenant_id} running on Runtime EC2.",
+        "https://{subdomain}.sites.onenexium.com loads in browser with valid SSL padlock.",
+        "The page served is the actual generated Next.js application.",
+        "Rolling deploy: update → new container → old container stopped — zero downtime.",
+        "Rollback: broken update → new container stopped → old container still serving traffic."
+      ]
+    },
+    {
+      "id": "goal_11",
+      "number": 11,
+      "title": "Backend Code Generation — Drizzle + API Routes Working",
+      "description": "When the user requests backend features (contact form, bookings, newsletter), the AI generates Drizzle schemas and Next.js API routes, provisions the tenant database schema, and the features work.",
+      "tasks": [
+        "provision_tenant_schema MCP tool: CREATE SCHEMA t_{tenant_id} in RDS, run Drizzle migrations",
+        "Backend feature detection in system prompt — Claude identifies form and interactive elements in frontend",
+        "Drizzle schema generation — contact form → contacts table, bookings → bookings table, newsletter → subscribers table",
+        "API route generation — POST /api/contact, GET+POST /api/bookings, POST /api/subscribe",
+        "Zod validation on every generated API route — invalid requests return 400 with structured errors",
+        "Email notification via Resend on contact form submission — sends to workspace owner email",
+        "create_s3_folder MCP tool: creates tenant folder in S3 for file uploads",
+        "store_secret MCP tool: stores per-tenant secrets in Secrets Manager",
+        "Generated API routes connect to correct tenant schema via DATABASE_URL search_path",
+        "Drizzle migration runs automatically in tenant schema after schema generation"
+      ],
+      "backend_features": [
+        {
+          "feature": "Contact Form",
+          "schema": "contacts",
+          "api_route": "POST /api/contact",
+          "notification": "Email via Resend to workspace owner"
+        },
+        {
+          "feature": "Bookings",
+          "schema": "bookings",
+          "api_routes": ["GET /api/bookings", "POST /api/bookings"]
+        },
+        {
+          "feature": "Newsletter",
+          "schema": "subscribers",
+          "api_route": "POST /api/subscribe"
+        }
+      ],
+      "acceptance_criteria": [
+        "User says \"Add a contact form\" — Claude generates lib/db/schema/contacts.ts and app/api/contact/route.ts.",
+        "Generated contacts table exists in t_{tenant_id} schema in RDS after provision_tenant_schema.",
+        "Submitting the contact form on the live site creates a row in the contacts table.",
+        "Contact form submission triggers an email to the workspace owner via Resend.",
+        "Submitting invalid data (empty email) returns 400 with error message."
+      ]
+    },
+    {
+      "id": "goal_12",
+      "number": 12,
+      "title": "Custom Domain — DNS Verification + SSL Activation Working",
+      "description": "Users enter their own domain, receive DNS instructions, the platform polls for verification, and activates the domain with SSL.",
+      "tasks": [
+        "Domain management page at /app/projects/[id]/domain",
+        "Domain input with format validation — only valid domain formats accepted",
+        "WHOIS-based or manual registrar detection — shows registrar-specific DNS instructions",
+        "CNAME record instructions: Type CNAME, Name, Value: {subdomain}.sites.onenexium.com, TTL 300",
+        "DNS polling: server-side job polls dns.resolve every 60 seconds after user submits domain",
+        "Domain record in RDS: status transitions from pending → verifying → verified",
+        "On DNS verified: call register_custom_domain MCP tool",
+        "register_custom_domain: SSH to Runtime EC2, update container Traefik labels to add custom domain host rule",
+        "Traefik auto-issues Let's Encrypt certificate for custom domain within 60 seconds",
+        "RDS domain.ssl_active set to true after certificate is confirmed",
+        "Email notification via Resend: \"Your domain {domain} is now live with SSL\"",
+        "Status UI: animated polling state → verified → SSL active (green badge)",
+        "HTTP → HTTPS redirect active on custom domain"
+      ],
+      "domain_status_states": ["pending", "verifying", "verified"],
+      "dns_polling_interval_seconds": 60,
+      "ssl_issue_timeout_seconds": 60,
+      "acceptance_criteria": [
+        "User enters test.theirdomain.com — DNS instructions appear with correct CNAME value.",
+        "After adding CNAME, platform detects it within 2 minutes of propagation.",
+        "https://test.theirdomain.com loads with valid SSL (not a self-signed cert).",
+        "http://test.theirdomain.com redirects to https://test.theirdomain.com.",
+        "User receives email notification when domain goes live."
+      ]
+    },
+    {
+      "id": "goal_13",
+      "number": 13,
+      "title": "RBAC + Team Invites — Role Access Working",
+      "description": "Roles restrict what different users can see and do. Workspace owners can invite team members at specific roles.",
+      "tasks": [
+        "Three roles defined and enforced: Admin (full access), Member (create/edit own projects), Viewer (read-only)",
+        "Middleware-level route protection — not just UI hiding, server validates role on every API call",
+        "Admin sees: all projects, team management page, delete buttons, billing section",
+        "Member sees: their own projects, can create new projects, cannot manage team",
+        "Viewer sees: projects list (read-only), cannot create projects, chat input is disabled, cannot edit",
+        "Role badge visible in platform sidebar under user avatar",
+        "Team management page at /app/settings/team — list members with role and joined date",
+        "Invite by email — sends magic link email with invitation token via Resend",
+        "Accept invite: GET /api/invites/accept?token={token} → creates user, assigns to workspace with specified role",
+        "Invite expires after 7 days — expired invites show error when accepted",
+        "Remove member: Admin can remove any member from workspace"
+      ],
+      "roles": [
+        {
+          "role": "admin",
+          "label": "Admin",
+          "access": "Full access",
+          "permissions": [
+            "View all projects",
+            "Team management page",
+            "Delete buttons",
+            "Billing section",
+            "Create new projects",
+            "Edit projects",
+            "Invite team members",
+            "Remove team members"
+          ]
+        },
+        {
+          "role": "member",
+          "label": "Member",
+          "access": "Create/edit own projects",
+          "permissions": [
+            "View own projects",
+            "Create new projects",
+            "Edit own projects"
+          ],
+          "restrictions": [
+            "Cannot manage team"
+          ]
+        },
+        {
+          "role": "viewer",
+          "label": "Viewer",
+          "access": "Read-only",
+          "permissions": [
+            "View projects list"
+          ],
+          "restrictions": [
+            "Cannot create projects",
+            "Chat input is disabled",
+            "Cannot edit"
+          ]
+        }
+      ],
+      "invite_expiry_days": 7,
+      "acceptance_criteria": [
+        "Viewer user: chat input box is disabled. \"New Project\" button is absent.",
+        "Member user: cannot see /app/settings/team page — redirected away.",
+        "Admin user: can see and use all features including team management and delete.",
+        "Invite email received. Clicking link creates account and joins workspace as member.",
+        "Expired invite (>7 days) shows \"This invite has expired\" when accessed."
+      ]
+    },
+    {
+      "id": "goal_14",
+      "number": 14,
+      "title": "Visual Overlay Editor — Click-to-Edit Working",
+      "description": "Users in Edit Mode can hover over any section of their preview, click a bubble, describe a change, and the AI updates only that component.",
+      "tasks": [
+        "Edit Mode toggle button in platform UI — switches preview from view-only to editable",
+        "In Edit Mode: hover over any section of preview iframe shows a floating edit bubble",
+        "Edit bubble contains: textarea for describing change, image upload button, Apply button",
+        "Component detection: iframe postMessage communication identifies which React component is hovered",
+        "Component mapped to source file and line range using file tree and component naming convention",
+        "On Apply: Claude is called with targeted context — current file content + user instruction",
+        "Claude uses apply_diff for targeted single-component edits — does not rewrite whole file",
+        "Build triggered after apply_diff — only affected file is changed",
+        "Preview refreshes showing the updated section within 3 minutes",
+        "Component undo: each component tracks last 3 versions — undo button in edit bubble",
+        "Exit Edit Mode: removes all edit bubbles, returns to clean preview view"
+      ],
+      "component_undo_versions": 3,
+      "preview_refresh_timeout_minutes": 3,
+      "acceptance_criteria": [
+        "In Edit Mode, hovering over the hero section shows a floating bubble.",
+        "Typing \"Change the headline to: Transform Your Life in 90 Days\" and clicking Apply updates only the hero headline.",
+        "The rest of the page is unchanged after a component-level edit.",
+        "Undo button in the bubble reverts the hero to its previous state."
+      ]
+    }
+  ],
+
+  "sprints": [
+    {
+      "id": "sprint_0",
+      "number": 0,
+      "label": "Sprint Zero",
+      "duration": "10 days",
+      "focus": "Walking skeleton — one prompt to one live URL",
+      "goals_completed": [
+        "Goals 1+2 partial",
+        "Goal 3 partial",
+        "Goal 6 partial",
+        "Goal 7 partial",
+        "Goal 8 partial",
+        "Goal 9 partial",
+        "Goal 10 partial"
+      ],
+      "tasks": []
+    },
+    {
+      "id": "sprint_1",
+      "number": 1,
+      "label": "Sprint 1",
+      "duration": "2 weeks",
+      "weeks": "Weeks 1-2 after Sprint Zero",
+      "focus": "Auth + Onboarding + Platform Shell",
+      "goals_completed": [
+        "Goal 3 complete",
+        "Goal 4 complete",
+        "Goal 5 complete"
+      ],
+      "tasks": [
+        "Complete Goal 3: Next.js platform deployed on EC2 with PM2 and CI/CD",
+        "Complete Goal 4: NextAuth Google + magic link working, sessions persisting, routes protected",
+        "Complete Goal 5: 4-step onboarding flow creating workspace, brand assets in S3",
+        "Platform sidebar layout with mobile responsive design",
+        "Projects list page showing created projects",
+        "Project creation flow — name → creates record → opens chat",
+        "Conversation history persists in RDS across page reloads",
+        "Health check endpoint active and passing ALB health checks"
+      ]
+    },
+    {
+      "id": "sprint_2",
+      "number": 2,
+      "label": "Sprint 2",
+      "duration": "2 weeks",
+      "weeks": "Weeks 3-4",
+      "focus": "Complete MCP Server + Full Chat UI",
+      "goals_completed": [
+        "Goal 6 complete",
+        "Goal 7 complete",
+        "Goal 8 partial"
+      ],
+      "tasks": [
+        "Complete Goal 6: Full chat interface with streaming, tool chips, URL card, preview iframe",
+        "Complete Goal 7: All 5 MCP namespaces deployed with all tools responding correctly",
+        "Context assembly function — project state, workspace, file tree, conversation history",
+        "System prompt v1 written and tested on 20 diverse prompts",
+        "Claude API call correctly passes all 5 MCP server URLs",
+        "Tool event parsing — every MCP tool call shows a status chip in chat",
+        "Preview iframe embedded in right panel and refreshes on deploy",
+        "Error display — friendly messages when generation fails"
+      ]
+    },
+    {
+      "id": "sprint_3",
+      "number": 3,
+      "label": "Sprint 3",
+      "duration": "2 weeks",
+      "weeks": "Weeks 5-6",
+      "focus": "AI Generation Quality + Build Pipeline Solid",
+      "goals_completed": [
+        "Goal 8 complete",
+        "Goal 9 complete"
+      ],
+      "tasks": [
+        "Complete Goal 8: Multi-page generation working, 80% build success rate on test prompts",
+        "Complete Goal 9: ECS Fargate build worker running, self-healing loop executing correctly",
+        "System prompt iteration — fix top failure patterns from Sprint 2 testing",
+        "20-prompt test batch — record failures, fix system prompt, retest",
+        "Build worker Docker image deployed to ECR",
+        "Build job status machine working: queued → building → complete / failed",
+        "Structured TypeScript error parsing — line number, file, message",
+        "Self-healing loop: 3 retry attempts with Claude auto-fixing errors",
+        "Build logs visible in CloudWatch"
+      ]
+    },
+    {
+      "id": "sprint_4",
+      "number": 4,
+      "label": "Sprint 4",
+      "duration": "2 weeks",
+      "weeks": "Weeks 7-8",
+      "focus": "Backend Generation + Full Deployment",
+      "goals_completed": [
+        "Goal 10 complete",
+        "Goal 11 complete"
+      ],
+      "tasks": [
+        "Complete Goal 10: Full deployment pipeline — container live on Runtime EC2 with SSL",
+        "Complete Goal 11: Drizzle schema + API routes generated, tenant schema provisioned, form submissions work",
+        "provision_tenant_schema creates correct PostgreSQL schema and runs migrations",
+        "Contact form end-to-end: user fills form → data in RDS → email sent via Resend",
+        "Rolling deploy working: new container, smoke test, old container stopped",
+        "Rollback working: failed smoke test keeps old container serving",
+        "Port assignment in RDS — no port conflicts under load",
+        "Container health check by Traefik every 30 seconds",
+        "Smoke tests: all page routes return 200, /api/health returns ok"
+      ]
+    },
+    {
+      "id": "sprint_5",
+      "number": 5,
+      "label": "Sprint 5",
+      "duration": "2 weeks",
+      "weeks": "Weeks 9-10",
+      "focus": "Custom Domain + RBAC + Team Invites",
+      "goals_completed": [
+        "Goal 12 complete",
+        "Goal 13 complete"
+      ],
+      "tasks": [
+        "Complete Goal 12: DNS polling, Traefik custom domain routing, SSL issued, email notification",
+        "Complete Goal 13: Admin/Member/Viewer roles enforced at API level, team invite email flow",
+        "Domain management page with status badges",
+        "DNS polling job running server-side every 60 seconds",
+        "Registrar-specific DNS instructions displayed",
+        "register_custom_domain MCP tool adding Traefik host rules via SSH",
+        "Role enforcement on all API routes — not just UI hiding",
+        "Invite link creation, email sending, acceptance flow",
+        "Team management page: list members, invite, remove"
+      ]
+    },
+    {
+      "id": "sprint_6",
+      "number": 6,
+      "label": "Sprint 6",
+      "duration": "2 weeks",
+      "weeks": "Weeks 11-12",
+      "focus": "Visual Overlay Editor + Full Integration Test",
+      "goals_completed": [
+        "Goal 14 complete",
+        "All 14 goals verified"
+      ],
+      "tasks": [
+        "Complete Goal 14: Edit Mode toggle, hover bubbles, component detection, apply_diff edits",
+        "Component-level undo (last 3 versions)",
+        "Edit bubble image upload for visual reference",
+        "20-prompt final test batch — all prompts through full pipeline",
+        "Full user journey test: signup → onboard → generate → backend → deploy → domain → invite → edit",
+        "All 14 goals verified against acceptance criteria",
+        "Bug fix sprint: fix all High and Medium severity issues found in integration test",
+        "Phase 1.1 completion review — confirm every acceptance criterion passes",
+        "Phase 1.2 backlog defined and prioritised"
+      ]
+    }
+  ],
+
+  "acceptance_criteria_master": [
+    {
+      "area": "Infrastructure",
+      "criterion": "Both EC2 instances running. RDS, Redis, S3, ECR all accessible. ALB serving HTTPS with valid SSL."
+    },
+    {
+      "area": "DNS",
+      "criterion": "onenexium.com, mcp.onenexium.com, and *.sites.onenexium.com all resolve to correct IPs."
+    },
+    {
+      "area": "Platform Deploy",
+      "criterion": "Push to main branch deploys platform to EC2 automatically via GitHub Actions."
+    },
+    {
+      "area": "Platform Health",
+      "criterion": "/api/health returns { status: ok, db: connected, redis: connected }."
+    },
+    {
+      "area": "Sign Up",
+      "criterion": "New user signs up with Google → lands on /onboarding."
+    },
+    {
+      "area": "Magic Link",
+      "criterion": "New user enters email → receives magic link → clicks it → lands on /app."
+    },
+    {
+      "area": "Onboarding",
+      "criterion": "4-step onboarding completes, workspace row created in RDS, user.onboarded = true."
+    },
+    {
+      "area": "Workspace Persistence",
+      "criterion": "User who completed onboarding goes directly to /app on next login."
+    },
+    {
+      "area": "Route Protection",
+      "criterion": "Unauthenticated visit to /app redirects to /login."
+    },
+    {
+      "area": "RBAC API Guard",
+      "criterion": "API route called with viewer session returns 403 for write operations."
+    },
+    {
+      "area": "Team Invite",
+      "criterion": "Admin invites email → invite email received → clicked → user joins workspace as member."
+    },
+    {
+      "area": "MCP Health",
+      "criterion": "curl https://mcp.onenexium.com/health returns 200 with valid SSL."
+    },
+    {
+      "area": "MCP Auth",
+      "criterion": "curl to MCP tool with no token returns 401. With valid token returns 200."
+    },
+    {
+      "area": "File Writing",
+      "criterion": "Claude calls write_file via MCP → file exists at /data/projects/{id}/app/page.tsx on Platform EC2."
+    },
+    {
+      "area": "Build Trigger",
+      "criterion": "Claude calls trigger_build → ECS Fargate task launches → visible in ECS console."
+    },
+    {
+      "area": "Build Success",
+      "criterion": "Valid Next.js project → build passes → image in ECR."
+    },
+    {
+      "area": "Build Error Parsing",
+      "criterion": "TypeScript error in generated code → get_build_errors returns [{file, line, message}]."
+    },
+    {
+      "area": "Self-Healing",
+      "criterion": "Broken TypeScript file → Claude fixes → rebuild → build passes. All in one Claude session."
+    },
+    {
+      "area": "Multi-Page Gen",
+      "criterion": "Prompt \"Build a coaching website\" → Claude writes at least 6 files including layout.tsx and 3 sub-pages."
+    },
+    {
+      "area": "Code Compiles",
+      "criterion": "Generated code from a typical prompt passes tsc --noEmit with zero errors."
+    },
+    {
+      "area": "Container Deploy",
+      "criterion": "After build: container starts on Runtime EC2, visible in docker ps."
+    },
+    {
+      "area": "Site Live",
+      "criterion": "https://{subdomain}.sites.onenexium.com loads in browser with valid SSL."
+    },
+    {
+      "area": "Rolling Deploy",
+      "criterion": "Edit → redeploy → old container stops, new container serves → zero downtime."
+    },
+    {
+      "area": "Backend Gen",
+      "criterion": "User asks for contact form → contacts table created in tenant schema → POST /api/contact inserts row."
+    },
+    {
+      "area": "Form Works",
+      "criterion": "Submitting contact form on live site inserts a row in RDS and sends email via Resend."
+    },
+    {
+      "area": "Custom Domain",
+      "criterion": "User enters custom domain → adds CNAME → platform detects → SSL active → site loads on custom domain."
+    },
+    {
+      "area": "Visual Editor",
+      "criterion": "In Edit Mode, hovering over a section shows bubble. Describing change updates only that component."
+    },
+    {
+      "area": "Component Undo",
+      "criterion": "After visual edit, clicking Undo in bubble restores previous component version."
+    },
+    {
+      "area": "Full Journey",
+      "criterion": "New user: signup → onboard → generate 4-page site → add contact form → deploy → connect domain → invite member. All steps work."
+    },
+    {
+      "area": "Conversation History",
+      "criterion": "Reload chat page → full message history visible. Continue conversation → AI has context of prior messages."
+    },
+    {
+      "area": "Preview Refresh",
+      "criterion": "After any generation or edit completes, preview iframe updates to show new state."
+    }
+  ],
+
+  "phase_1_2_backlog": [
+    {
+      "item": "Billing — Stripe Free/Pro/Business plans",
+      "reason": "Revenue gating matters. But not before the engine works. Build it on a working product."
+    },
+    {
+      "item": "Generated website visual quality",
+      "reason": "Quality is a system prompt problem. System prompt improves through iteration, not upfront design."
+    },
+    {
+      "item": "LLM cost optimisation (semantic caching, model routing)",
+      "reason": "Premature optimisation. Understand real usage patterns before optimising."
+    },
+    {
+      "item": "Generation time performance (< 90 seconds target)",
+      "reason": "Current 3-5 min is acceptable for Phase 1.1 testing. Optimise in 1.2."
+    },
+    {
+      "item": "Advanced monitoring — Langfuse full observability",
+      "reason": "Instrument when the system is stable. Not while building it."
+    },
+    {
+      "item": "SEO auto-configuration",
+      "reason": "Nice to have. Not needed for a working engine."
+    },
+    {
+      "item": "Coaching vertical templates (10+)",
+      "reason": "Templates improve quality. Quality is Phase 1.2."
+    },
+    {
+      "item": "WebSocket real-time (replace polling)",
+      "reason": "Polling works. WebSockets are a performance improvement."
+    },
+    {
+      "item": "PgBouncer connection pooling",
+      "reason": "Only needed at 300+ concurrent connections. Not at Phase 1.1 scale."
+    },
+    {
+      "item": "CloudFront CDN for uploads",
+      "reason": "S3 direct works fine at MVP. CDN is a cost/performance optimisation."
+    },
+    {
+      "item": "Advanced analytics dashboard (user-facing)",
+      "reason": "Users don't need analytics until they have a working product."
+    },
+    {
+      "item": "Automated testing suite (Playwright E2E)",
+      "reason": "Testing is critical. But write tests for stable features, not changing ones."
+    },
+    {
+      "item": "Multi-region deployment",
+      "reason": "Single region (ap-south-1) is fine for Phase 1.1."
+    },
+    {
+      "item": "White-label agency plan",
+      "reason": "Agency channel is Phase 2+. Focus on direct users first."
+    },
+    {
+      "item": "AI quality evaluation framework",
+      "reason": "Build this in Phase 1.2 once you have data from real usage."
+    }
+  ],
+
+  "operating_rules": [
+    {
+      "number": 1,
+      "rule": "WORKING BEATS PERFECT",
+      "description": "If a feature works but looks bad, it is done for Phase 1.1. Move on."
+    },
+    {
+      "number": 2,
+      "rule": "ONE GOAL AT A TIME",
+      "description": "Do not start Goal N+1 until Goal N's acceptance criteria all pass."
+    },
+    {
+      "number": 3,
+      "rule": "BACKLOG EVERYTHING ELSE",
+      "description": "Any idea that is not in the current sprint goes to BACKLOG.md. Not in the next sprint. BACKLOG. Until Phase 1.2."
+    },
+    {
+      "number": 4,
+      "rule": "DAILY TEST",
+      "description": "Every day, run the full user journey from signup to a working page. If any step is broken, fix it before building new features."
+    },
+    {
+      "number": 5,
+      "rule": "COMMIT WORKING STATE",
+      "description": "Every time a goal's acceptance criteria pass, commit with a tag. git tag goal-07-complete. If something breaks later, you can roll back to this."
+    },
+    {
+      "number": 6,
+      "rule": "NO SILENT BLOCKERS",
+      "description": "If either engineer is blocked for more than 2 hours, escalate. Blocked work is invisible waste."
+    },
+    {
+      "number": 7,
+      "rule": "PROMPT ITERATION IS ENGINEERING",
+      "description": "Improving the system prompt is as important as writing code. Allocate 20% of each sprint to prompt testing and iteration."
+    },
+    {
+      "number": 8,
+      "rule": "GOAL 1 AND 2 MUST STAY GREEN",
+      "description": "Infrastructure and external services are the foundation. Any regression here takes priority over all feature work."
+    }
+  ],
+
+  "sprint_completion_definition": {
+    "conditions": [
+      "All goals scheduled for that sprint have their acceptance criteria passing.",
+      "The full user journey (signup → generate → deploy) still works end-to-end.",
+      "No new High severity bugs were introduced.",
+      "BACKLOG.md is updated with anything deferred.",
+      "The next sprint's goals are clear and agreed."
+    ],
+    "note": "A sprint is NOT complete just because the tasks are checked off. The acceptance criteria are what matter — not the task list."
+  },
+
+  "phase_completion_definition": {
+    "trigger_conditions": [
+      "All 14 goals have their acceptance criteria passing",
+      "The complete 30-item acceptance criteria table (Section 04) all pass",
+      "The full 12-step user journey test (Section 01) passes without developer help",
+      "No High or Critical severity bugs are open"
+    ],
+    "completion_review_process": [
+      "Both engineers run the full user journey independently",
+      "Founder watches without assisting",
+      "All 30 acceptance criteria are checked off one by one"
+    ],
+    "post_completion_actions": [
+      "Tag the repository: git tag phase-1.1-complete",
+      "Write Phase 1.1 retrospective document",
+      "Define Phase 1.2 sprint plan",
+      "Begin Phase 1.2"
+    ]
+  },
+
+  "closing_statement": "Phase 1.1 is the engine. Phase 1.2 is the polish. Build the engine first. Build it completely. Then make it brilliant."
+}
