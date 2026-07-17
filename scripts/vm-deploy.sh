@@ -29,7 +29,7 @@ if ! sudo docker compose version >/dev/null 2>&1; then
 fi
 
 if [ -f /tmp/onenexium-image.tar ]; then
-  echo "==> Loading pre-built Docker image (used only if app mode = docker)..."
+  echo "==> Loading pre-built Docker image (PM2 extract + optional docker-app)..."
   sudo docker load -i /tmp/onenexium-image.tar
   rm -f /tmp/onenexium-image.tar
 fi
@@ -233,6 +233,9 @@ extract_release_from_image() {
   local user="$1"
   local cid=""
   local tmp
+  local server_js
+  local src_root
+  local staging
 
   if ! sudo docker image inspect onenexium-os:latest >/dev/null 2>&1; then
     echo "ERROR: Docker image onenexium-os:latest not loaded (needed for host/PM2 release)." >&2
@@ -241,28 +244,57 @@ extract_release_from_image() {
 
   echo "==> Extracting prebuilt standalone from Docker image (no next build on VM)..."
   tmp="$(mktemp -d /tmp/onenexium-release.XXXXXX)"
+  staging="$(mktemp -d /tmp/onenexium-staging.XXXXXX)"
   cid="$(sudo docker create onenexium-os:latest)"
-  sudo docker cp "${cid}:/app/." "${tmp}/"
+  # Copy whole /app tree (trailing /. = contents). Some images nest server.js one level down.
+  sudo docker cp "${cid}:/app" "${tmp}/app-root"
   sudo docker rm -f "$cid" >/dev/null
 
-  if [ ! -f "${tmp}/server.js" ]; then
-    echo "ERROR: Extracted image has no server.js (standalone layout unexpected)." >&2
-    sudo rm -rf "$tmp"
+  server_js="$(sudo find "${tmp}/app-root" -type f -name server.js 2>/dev/null | head -1 || true)"
+  if [ -z "$server_js" ]; then
+    echo "ERROR: No server.js inside Docker image /app (standalone missing)." >&2
+    echo "==> Image /app layout (top):" >&2
+    sudo find "${tmp}/app-root" -maxdepth 3 \( -type f -o -type d \) 2>/dev/null | head -40 >&2 || true
+    sudo rm -rf "$tmp" "$staging"
     exit 1
   fi
 
-  # Atomic swap of release directory
+  src_root="$(dirname "$server_js")"
+  echo "==> Found standalone server.js at: $server_js"
+  echo "==> Using release root: $src_root"
+
+  # Stage a clean tree (never `mv` a temp dir onto an existing release — that nests paths).
+  sudo mkdir -p "$staging"
+  sudo cp -a "${src_root}/." "$staging/"
+  if [ ! -f "$staging/server.js" ]; then
+    echo "ERROR: staging copy failed — server.js missing after cp." >&2
+    sudo rm -rf "$tmp" "$staging"
+    exit 1
+  fi
+
+  # Atomic replace of /opt/onenexium/release
+  sudo mkdir -p "$APP_DIR"
   sudo rm -rf "${RELEASE_DIR}.prev"
-  if [ -d "$RELEASE_DIR" ]; then
+  if [ -e "$RELEASE_DIR" ]; then
     sudo mv "$RELEASE_DIR" "${RELEASE_DIR}.prev"
   fi
-  sudo mkdir -p "$APP_DIR"
-  sudo mv "$tmp" "$RELEASE_DIR"
-  sudo cp -f "$APP_DIR/.env" "$RELEASE_DIR/.env"
-  sudo chown -R "${user}:${user}" "$RELEASE_DIR"
-  sudo rm -rf "${RELEASE_DIR}.prev"
+  sudo mv "$staging" "$RELEASE_DIR"
 
-  echo "==> Release ready at $RELEASE_DIR"
+  if [ -f "$APP_DIR/.env" ]; then
+    sudo cp -f "$APP_DIR/.env" "$RELEASE_DIR/.env"
+  else
+    echo "WARNING: $APP_DIR/.env missing — PM2 may lack production env." >&2
+  fi
+  sudo chown -R "${user}:${user}" "$RELEASE_DIR"
+  sudo rm -rf "${RELEASE_DIR}.prev" "$tmp"
+
+  if [ ! -f "$RELEASE_DIR/server.js" ]; then
+    echo "ERROR: $RELEASE_DIR/server.js still missing after extract." >&2
+    sudo ls -la "$RELEASE_DIR" | head -30 >&2 || true
+    exit 1
+  fi
+
+  echo "==> Release ready at $RELEASE_DIR (server.js present)"
 }
 
 # Stop whatever currently holds :8080 (old next-server / old PM2), then start release under PM2.
