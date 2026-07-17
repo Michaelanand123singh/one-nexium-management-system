@@ -310,6 +310,12 @@ export const NAV_MODULES: {
     roles: PRIMARY_NAV_ROLES,
   },
   {
+    label: "Architecture",
+    href: "/architecture",
+    icon: "Network",
+    roles: PRIMARY_NAV_ROLES,
+  },
+  {
     label: "AI Terminal",
     href: "/terminal",
     icon: "Terminal",

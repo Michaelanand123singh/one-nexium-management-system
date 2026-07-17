@@ -17,6 +17,7 @@ import {
   Settings,
   CalendarDays,
   Laptop,
+  Network,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAV_MODULES } from "@/lib/constants";
@@ -37,6 +38,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   Settings,
   CalendarDays,
   Laptop,
+  Network,
 };
 
 export function AppSidebar({

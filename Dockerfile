@@ -34,6 +34,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Standalone trace omits Prisma query engines — copy them explicitly for Debian/OpenSSL 3.
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma/client ./node_modules/@prisma/client
+# Architecture module reads HLD/LLD markdown at runtime (not traced into standalone).
+COPY --from=builder --chown=nextjs:nodejs /app/docs/architecture ./docs/architecture
 COPY --from=builder /app/scripts/docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x docker-entrypoint.sh
 

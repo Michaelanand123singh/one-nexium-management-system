@@ -26,6 +26,7 @@ import {
   GitBranch,
   Server,
   Terminal,
+  Network,
   type LucideIcon,
 } from "lucide-react";
 import { NAV_MODULES } from "@/lib/constants";
@@ -45,6 +46,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Terminal,
   Laptop,
   Settings,
+  Network,
 };
 
 export function CommandPalette({ role }: { role: Role }) {
