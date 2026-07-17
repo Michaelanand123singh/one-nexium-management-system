@@ -57,14 +57,26 @@ tar -czf "${ARCHIVE}" \
   -C "${ROOT}" .
 
 echo "Uploading to VM..."
-gcloud compute ssh "${INSTANCE}" --zone="${ZONE}" --command="sudo mkdir -p ${REMOTE_DIR} && sudo chown \$USER:\$USER ${REMOTE_DIR}"
+# Always land files in /tmp first — /opt/onenexium may be root-owned (scp cannot sudo).
+gcloud compute ssh "${INSTANCE}" --zone="${ZONE}" --command="sudo mkdir -p ${REMOTE_DIR}"
 gcloud compute scp "${ARCHIVE}" "${INSTANCE}:/tmp/onenexium-deploy.tar.gz" --zone="${ZONE}"
 gcloud compute scp "${IMAGE_ARCHIVE}" "${INSTANCE}:/tmp/onenexium-image.tar" --zone="${ZONE}"
-gcloud compute scp "${ENV_PROD}" "${INSTANCE}:${REMOTE_DIR}/.env" --zone="${ZONE}"
+gcloud compute scp "${ENV_PROD}" "${INSTANCE}:/tmp/onenexium.env" --zone="${ZONE}"
 gcloud compute scp "${ROOT}/scripts/vm-deploy.sh" "${INSTANCE}:/tmp/vm-deploy.sh" --zone="${ZONE}"
 
 echo "Starting on VM..."
-gcloud compute ssh "${INSTANCE}" --zone="${ZONE}" --command="cd ${REMOTE_DIR} && tar xzf /tmp/onenexium-deploy.tar.gz && chmod +x /tmp/vm-deploy.sh && bash /tmp/vm-deploy.sh"
+# Install .env with sudo (fixes Permission denied on /opt/onenexium/.env), then deploy.
+gcloud compute ssh "${INSTANCE}" --zone="${ZONE}" --command="
+  set -e
+  sudo mkdir -p ${REMOTE_DIR}
+  sudo install -m 600 /tmp/onenexium.env ${REMOTE_DIR}/.env
+  sudo chown -R \"\$(whoami):\$(whoami)\" ${REMOTE_DIR} || true
+  cd ${REMOTE_DIR}
+  tar xzf /tmp/onenexium-deploy.tar.gz
+  chmod +x /tmp/vm-deploy.sh
+  bash /tmp/vm-deploy.sh
+  rm -f /tmp/onenexium.env
+"
 
 rm -f "${ARCHIVE}" "${IMAGE_ARCHIVE}" "${ENV_PROD}"
 

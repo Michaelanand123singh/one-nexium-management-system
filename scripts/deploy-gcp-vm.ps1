@@ -86,15 +86,26 @@ tar -czf $Archive `
   -C $Root .
 
 Write-Host "Uploading to VM..." -ForegroundColor Yellow
-$setupCmd = 'sudo mkdir -p ' + $RemoteDir + ' && sudo chown $USER:$USER ' + $RemoteDir
-& $Gcloud compute ssh $Instance --zone=$Zone --command=$setupCmd
+# Always land files in /tmp first — /opt/onenexium may be root-owned (scp cannot sudo).
+& $Gcloud compute ssh $Instance --zone=$Zone --command="sudo mkdir -p $RemoteDir"
 & $Gcloud compute scp $Archive "${Instance}:/tmp/onenexium-deploy.tar.gz" --zone=$Zone
 & $Gcloud compute scp $ImageArchive "${Instance}:/tmp/onenexium-image.tar" --zone=$Zone
-& $Gcloud compute scp $envProd "${Instance}:${RemoteDir}/.env" --zone=$Zone
+& $Gcloud compute scp $envProd "${Instance}:/tmp/onenexium.env" --zone=$Zone
 & $Gcloud compute scp (Join-Path $Root "scripts\vm-deploy.sh") "${Instance}:/tmp/vm-deploy.sh" --zone=$Zone
 
 Write-Host "Building and starting on VM (5-10 min)..." -ForegroundColor Yellow
-$deployCmd = 'cd ' + $RemoteDir + ' && tar xzf /tmp/onenexium-deploy.tar.gz && chmod +x /tmp/vm-deploy.sh && bash /tmp/vm-deploy.sh'
+# Install .env with sudo (fixes Permission denied on /opt/onenexium/.env), then deploy.
+$deployCmd = @"
+set -e
+sudo mkdir -p $RemoteDir
+sudo install -m 600 /tmp/onenexium.env $RemoteDir/.env
+sudo chown -R "`$(whoami):`$(whoami)" $RemoteDir || true
+cd $RemoteDir
+tar xzf /tmp/onenexium-deploy.tar.gz
+chmod +x /tmp/vm-deploy.sh
+bash /tmp/vm-deploy.sh
+rm -f /tmp/onenexium.env
+"@
 & $Gcloud compute ssh $Instance --zone=$Zone --command=$deployCmd
 
 Remove-Item $Archive -Force -ErrorAction SilentlyContinue
