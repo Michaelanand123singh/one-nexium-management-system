@@ -7,7 +7,10 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-change-me-minio-secret}
     volumes:
       - minio_data:/data
-    # No host ports — avoids conflicts on shared VMs. App uses http://minio:9000 on the compose network.
+    # Host loopback for PM2/Node app on the VM (.env MINIO_ENDPOINT=http://127.0.0.1:9000).
+    # Docker "app" service still uses http://minio:9000 on the compose network.
+    ports:
+      - "127.0.0.1:9000:9000"
     expose:
       - "9000"
       - "9001"
@@ -35,6 +38,7 @@ services:
       "
     restart: "no"
 
+  # Only started when deploy detects Docker app mode (not when PM2 already owns :8080).
   app:
     image: onenexium-os:latest
     depends_on:
@@ -50,6 +54,8 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
     restart: unless-stopped
+    profiles:
+      - docker-app
 
 volumes:
   minio_data:

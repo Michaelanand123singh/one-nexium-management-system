@@ -39,11 +39,17 @@ echo "==> Updated keys (secrets masked):"
 grep -E '^(GOOGLE_CLIENT_ID|GOOGLE_CLIENT_SECRET|ALLOWED_GOOGLE_EMAILS|DEFAULT_GOOGLE_SIGNIN_ROLE|NEXIUM_APP_URL)=' "$ENV" \
   | sed 's/^\(GOOGLE_CLIENT_SECRET=\).*/\1***masked***/'
 
-echo "==> Recreating app container (env only; same image)..."
+echo "==> Applying env to running app (PM2 or Docker)..."
 cd /opt/onenexium
-sudo docker compose -f docker-compose.prod.yml up -d --force-recreate
+sudo docker compose -f docker-compose.prod.yml up -d minio
+if command -v pm2 >/dev/null 2>&1 && pm2 jlist 2>/dev/null | grep -q '"status":"online"'; then
+  pm2 restart all --update-env || true
+elif sudo docker ps -q --filter publish=8080 | grep -q .; then
+  sudo docker compose -f docker-compose.prod.yml --profile docker-app up -d --force-recreate --no-deps app
+fi
 sleep 5
-sudo docker ps --filter name=onenexium-app --format '{{.Names}} {{.Status}}'
+(pm2 list 2>/dev/null || true)
+sudo docker ps --filter name=onenexium --format '{{.Names}} {{.Status}}' || true
 
 code=$(curl -s -o /dev/null -w '%{http_code}' "https://team.1nexium.com/api/auth/google" || true)
 echo "google_auth_route_http:${code}"
