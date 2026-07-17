@@ -11,6 +11,8 @@
 set -euo pipefail
 
 APP_DIR="/opt/onenexium"
+# Prebuilt Next standalone extracted from the CI Docker image (never run next build on the VM).
+RELEASE_DIR="${APP_DIR}/release"
 DOMAIN="team.1nexium.com"
 COMPOSE="docker-compose.prod.yml"
 cd "$APP_DIR"
@@ -225,46 +227,100 @@ resolve_pm2_name() {
   return 1
 }
 
-# Build app tree as a given OS user (shared by PM2 + bare next-server paths).
-build_as_user() {
+# Extract the already-built standalone app from onenexium-os:latest (built on GitHub Actions).
+# The VM is too small to run `next build` — that hung/OOM'd for 40+ minutes.
+extract_release_from_image() {
   local user="$1"
-  sudo chown -R "$user:$user" "$APP_DIR" || true
-  sudo -u "$user" bash -lc "
-    set -e
-    cd '$APP_DIR'
-    if [ -f package-lock.json ]; then npm ci; else npm install; fi
-    npm run build
-  "
+  local cid=""
+  local tmp
+
+  if ! sudo docker image inspect onenexium-os:latest >/dev/null 2>&1; then
+    echo "ERROR: Docker image onenexium-os:latest not loaded (needed for host/PM2 release)." >&2
+    exit 1
+  fi
+
+  echo "==> Extracting prebuilt standalone from Docker image (no next build on VM)..."
+  tmp="$(mktemp -d /tmp/onenexium-release.XXXXXX)"
+  cid="$(sudo docker create onenexium-os:latest)"
+  sudo docker cp "${cid}:/app/." "${tmp}/"
+  sudo docker rm -f "$cid" >/dev/null
+
+  if [ ! -f "${tmp}/server.js" ]; then
+    echo "ERROR: Extracted image has no server.js (standalone layout unexpected)." >&2
+    sudo rm -rf "$tmp"
+    exit 1
+  fi
+
+  # Atomic swap of release directory
+  sudo rm -rf "${RELEASE_DIR}.prev"
+  if [ -d "$RELEASE_DIR" ]; then
+    sudo mv "$RELEASE_DIR" "${RELEASE_DIR}.prev"
+  fi
+  sudo mkdir -p "$APP_DIR"
+  sudo mv "$tmp" "$RELEASE_DIR"
+  sudo cp -f "$APP_DIR/.env" "$RELEASE_DIR/.env"
+  sudo chown -R "${user}:${user}" "$RELEASE_DIR"
+  sudo rm -rf "${RELEASE_DIR}.prev"
+
+  echo "==> Release ready at $RELEASE_DIR"
 }
 
-# Last resort: replace bare next-server (no PM2 name). Assumes build already done in APP_DIR.
-restart_host_next_server() {
-  local pid user
-  pid="$(pid_on_8080)"
-  [ -n "$pid" ] || return 1
-  user="$(ps -o user= -p "$pid" | awk '{print $1}')"
-  [ -n "$user" ] || return 1
+# Stop whatever currently holds :8080 (old next-server / old PM2), then start release under PM2.
+start_release_with_pm2() {
+  local user="$1"
+  local pid name
 
-  echo "==> No PM2 app name — replacing host next-server pid=$pid user=$user with PM2 'onenexium'"
-  sudo chown -R "$user:$user" "$APP_DIR" || true
+  if [ ! -f "$RELEASE_DIR/server.js" ]; then
+    echo "ERROR: missing $RELEASE_DIR/server.js" >&2
+    exit 1
+  fi
 
-  # Stop old listener, then start under PM2 so future deploys can find it.
-  sudo kill "$pid" || true
+  # Free :8080 briefly for the new process.
+  if pid="$(pid_on_8080)"; then
+    echo "==> Stopping old listener pid=$pid on :8080..."
+    sudo kill "$pid" 2>/dev/null || true
+    sleep 2
+    if port_8080_in_use; then
+      sudo kill -9 "$pid" 2>/dev/null || true
+      sleep 1
+    fi
+  fi
+
+  # Remove known old app names so we don't leave duplicates.
+  for name in onenexium onenexium-os nexium nexium-os onenexium-management-system; do
+    pm2_as_user "$user" delete "$name" >/dev/null 2>&1 || true
+  done
+
+  echo "==> Starting PM2 'onenexium' → node server.js (cwd=$RELEASE_DIR)"
+  # Bind loopback only — nginx proxies to 127.0.0.1:8080
+  # Write a tiny ecosystem so PORT/HOSTNAME survive pm2 save/reboot.
+  cat <<EOF | sudo tee "$RELEASE_DIR/ecosystem.config.cjs" >/dev/null
+module.exports = {
+  apps: [{
+    name: "onenexium",
+    cwd: "$RELEASE_DIR",
+    script: "server.js",
+    env: {
+      NODE_ENV: "production",
+      PORT: "8080",
+      HOSTNAME: "127.0.0.1",
+    },
+  }],
+};
+EOF
+  sudo chown "${user}:${user}" "$RELEASE_DIR/ecosystem.config.cjs"
+
+  pm2_as_user "$user" start "$RELEASE_DIR/ecosystem.config.cjs"
+  pm2_as_user "$user" save || true
+  pm2_as_user "$user" list || true
+
   sleep 2
-  if port_8080_in_use; then
-    sudo kill -9 "$pid" 2>/dev/null || true
-    sleep 1
+  if ! port_8080_in_use; then
+    echo "ERROR: :8080 not listening after PM2 start." >&2
+    pm2_as_user "$user" logs onenexium --lines 40 || true
+    exit 1
   fi
-
-  if pm2_bin_for_user "$user" >/dev/null 2>&1; then
-    # Drop stale empty daemon entries if any; start canonical process.
-    pm2_as_user "$user" delete onenexium >/dev/null 2>&1 || true
-    pm2_as_user "$user" start npm --name onenexium --cwd "$APP_DIR" -- start
-    pm2_as_user "$user" save || true
-    pm2_as_user "$user" list || true
-  else
-    sudo -u "$user" bash -lc "cd '$APP_DIR' && PORT=8080 NODE_ENV=production nohup npm start >/tmp/onenexium-next.log 2>&1 &"
-  fi
+  echo "==> Host app listening on 127.0.0.1:8080"
 }
 
 detect_app_mode() {
@@ -326,30 +382,8 @@ deploy_app_pm2() {
   fi
 
   echo "==> Deploying as OS user: $pm2_user"
-  echo "==> Installing deps + building Next.js (as $pm2_user)..."
-  build_as_user "$pm2_user"
-
-  if [ -n "${target:-}" ]; then
-    if name="$(resolve_pm2_name)"; then
-      echo "==> Reloading existing PM2 app: $name"
-      pm2_as_user "${target%%|*}" restart "$name" --update-env
-      pm2_as_user "${target%%|*}" save || true
-      echo "==> PM2 status:"
-      pm2_as_user "${target%%|*}" list || true
-      return 0
-    fi
-  fi
-
-  # Bare next-server under Hp with empty PM2 list for the SSH user.
-  if port_8080_in_use; then
-    restart_host_next_server
-    return 0
-  fi
-
-  echo "==> No listener on :8080 — starting PM2 app 'onenexium' as $pm2_user"
-  pm2_as_user "$pm2_user" start npm --name onenexium --cwd "$APP_DIR" -- start
-  pm2_as_user "$pm2_user" save || true
-  pm2_as_user "$pm2_user" list || true
+  extract_release_from_image "$pm2_user"
+  start_release_with_pm2 "$pm2_user"
 }
 
 deploy_app_docker() {
