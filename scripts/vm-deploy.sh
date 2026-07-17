@@ -42,6 +42,15 @@ else
   sudo systemctl start nginx
 fi
 
+echo "==> Stopping any previous stack (frees 127.0.0.1:8080)..."
+sudo docker compose -f docker-compose.prod.yml down --remove-orphans || true
+# If something else still holds :8080 (old container / stray process), clear it.
+if sudo ss -lptn 'sport = :8080' 2>/dev/null | grep -q 8080; then
+  echo "==> Port 8080 still busy — stopping containers publishing 8080..."
+  sudo docker ps -q --filter publish=8080 | xargs -r sudo docker stop
+  sudo docker ps -aq --filter publish=8080 | xargs -r sudo docker rm -f
+fi
+
 echo "==> Starting MinIO + app..."
 sudo docker compose -f docker-compose.prod.yml up -d --force-recreate
 # Ensure bucket exists (idempotent)
